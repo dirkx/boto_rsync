@@ -646,10 +646,6 @@ def main():
                         else:
                             key_name = cloud_path + get_key_name(root, path) + \
                                        '/'
-<<<<<<< HEAD
-=======
-                        
->>>>>>> e1862c631973fd18405203cb7889b649421e1ac8
                         key_name = key_name.decode('utf-8')
                         if key_name in keys:
                             del(keys[key_name])
