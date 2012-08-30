@@ -24,6 +24,7 @@
 import sys, os, time, datetime, argparse, threading, signal
 from fnmatch import fnmatch
 import boto
+import boto,GnuPGInterface
 
 __version__ = '0.8.1'
 
@@ -171,11 +172,21 @@ def signal_handler(signum, frame):
         sys.stdout.write('\n')
         sys.exit(0)
 
+def store_file(key, fullpath,cb,num_cb):
+    if gnupg:
+       p1 = gnupg.run(['--encrypt'], create_fhs=['stdin'], attach_fhs={'stdout': open(fullpath,'w') })
+       key.get_file(p1.handles['stdin'], cb=cb, num_cb=num_cb)
+       p1.handles['stdin'].close()
+       p1.wait()
+    else:
+       key.get_contents_to_filename(fullpath, cb=cb, num_cb=num_cb)
+
 def main():
-    global speeds, ev
+    global speeds, ev, gnupg
     
     signal.signal(signal.SIGINT, signal_handler)
     ev = None
+    gnupg = None
     speeds = []
     cb = submit_cb
     num_cb = 10
@@ -282,6 +293,10 @@ def main():
              'will be printed about what would have happened.'
         )
     parser.add_argument(
+	'-R','--recipient', action='append',
+	help='Add recipients to GPG encrypt to. Repeat as needed.'
+    )
+    parser.add_argument(
         '-v', '--verbose', action='store_false', dest='quiet',
         help='Print additional informational messages.'
         )
@@ -331,9 +346,20 @@ def main():
         debug = args.debug
         source = args.SOURCE
         dest = args.DESTINATION
-    except:
+
+        if args.recipient:
+           gnupg = GnuPGInterface.GnuPG()
+           gnupg.call = '/usr/local/bin/gpg2'
+           gnupg.options.armor = 0
+           gnupg.options.meta_interactive = 0
+           gnupg.options.extra_args.append('--no-secmem-warning')
+           gnupg.options.recipients = args.recipient
+
+    except Exception, e:
         sys.stdout.write('\nERROR: Improperly formatted arguments.\n\n')
+        raise e
         usage(parser)
+
     
     if (source.startswith('s3://') and dest.startswith('gs://') or
         source.startswith('gs://') and dest.startswith('s3://')):
@@ -539,7 +565,7 @@ def main():
                         continue
                     
                     fullpath = os.path.join(root, file)
-                    key_name = cloud_path + get_key_name(fullpath, path)
+                    key_name = cloud_path + get_key_name(fullpath, path).decode('utf-8')
                     file_size = os.path.getsize(fullpath)
                     
                     if file_size == 0:
@@ -617,7 +643,7 @@ def main():
                         else:
                             key_name = cloud_path + get_key_name(root, path) + \
                                        '/'
-                        
+                        key_name = key_name.decode('utf-8')
                         if key_name in keys:
                             del(keys[key_name])
                 
@@ -792,10 +818,9 @@ def main():
                 if not no_op:
                     # Setup callback
                     num_cb = int(key.size ** .25)
-                    
-                    # Get the file
-                    key.get_contents_to_filename(fullpath, cb=cb, num_cb=num_cb)
-                    
+
+                    store_file(key,fullpath,cb,num_cb)                   
+
                     # Clean stdout
                     sys.stdout.write('\n')
         
@@ -839,7 +864,7 @@ def main():
                             fullpath[len(os.path.join(path, '')):]
                             )
                     continue
-                
+                sys.stdout.write('Checking 1 %s\n' % fullpath.encode('utf8','replace'))
                 if not os.path.isdir(os.path.split(fullpath)[0]):
                     if not quiet:
                         sys.stdout.write(
@@ -879,10 +904,7 @@ def main():
                     else:
                         # Setup callback
                         num_cb = int(key.size ** .25)
-                        
-                        # Get the file
-                        key.get_contents_to_filename(fullpath, cb=cb,
-                                                     num_cb=num_cb)
+                        store_file(key,fullpath,cb,num_cb)                   
                     
                     # Clean stdout
                     sys.stdout.write('\n')
