@@ -515,7 +515,7 @@ def main():
                     else:
                         key_name = cloud_path + get_key_name(root, path) + '/'
                     
-                    key_name = key_name.decode('utf-8')
+                    key_name = key_name.decode('utf-8','replace')
 
                     if ignore_empty and not files:
                         if not quiet:
@@ -572,7 +572,7 @@ def main():
                         continue
                     
                     fullpath = os.path.join(root, file)
-                    key_name = (cloud_path + get_key_name(fullpath, path)).decode('utf-8')
+                    key_name = (cloud_path + get_key_name(fullpath, path)).decode('utf-8','replace')
                     file_size = os.path.getsize(fullpath)
                     
                     # determine if the file should be excluded according to command line arguments.
@@ -654,7 +654,7 @@ def main():
                     for file in files:
                         fullpath = os.path.join(root, file)
                         key_name = cloud_path + get_key_name(fullpath, path)
-                        key_name = key_name.decode('utf-8')
+                        key_name = key_name.decode('utf-8','replace')
                         if key_name in keys:
                             del(keys[key_name])
                     
@@ -665,7 +665,7 @@ def main():
                         else:
                             key_name = cloud_path + get_key_name(root, path) + \
                                        '/'
-                        key_name = key_name.decode('utf-8')
+                        key_name = key_name.decode('utf-8','replace')
                         if key_name in keys:
                             del(keys[key_name])
                 
