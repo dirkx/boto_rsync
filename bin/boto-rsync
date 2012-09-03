@@ -358,6 +358,7 @@ def main():
            gnupg.options.armor = 0
            gnupg.options.meta_interactive = 0
            gnupg.options.extra_args.append('--no-secmem-warning')
+           gnupg.options.extra_args.append('--quiet')
            gnupg.options.recipients = args.recipient
 
     except Exception, e:
