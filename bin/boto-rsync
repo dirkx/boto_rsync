@@ -870,6 +870,8 @@ def main():
                     continue
                 
                 keypath = key.name[len(cloud_path):]
+                keypath = keypath.encode('ascii','ignore')
+
                 if cloud_service == 'gs':
                     fullpath = os.path.join(
                         path,
